@@ -1,0 +1,14 @@
+CC=gcc
+
+all: MySqlLite
+
+MySqlLite: map.o main.o
+	gcc -o MySqlLite main.o map.o
+main.o: main.c map.h
+	gcc -o main.o -c main.c
+map.o: map.c
+	gcc -o map.o -c map.c
+clean:
+	rm -rf *.o
+mrproper: clean
+	rm -rf hello

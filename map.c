@@ -1,0 +1,252 @@
+
+#include "map.h"
+
+
+t_hashmap* hashmap_create(unsigned int slots, double load_factor, double growth_factor){
+    t_hashmap* map = (t_hashmap*)malloc(sizeof(t_hashmap));
+    map->initial_slot = slots;
+    map->load_factor = load_factor;
+    map->growth_factor = growth_factor;
+    map->slots=slots;
+    map->size=0;
+    map->entries=(t_hashmap_entry**)malloc(sizeof(t_hashmap_entry*)*slots);
+    int i;
+    for(i=0;i<slots;i++){
+        map->entries[i]=NULL;
+    }
+    return map;
+}
+
+t_list_chain* list_chain_create(t_hashmap* value)
+{
+	t_list_chain* list = (t_list_chain*)malloc(sizeof(t_list_chain));
+	list->value = value;
+	list->next = NULL;
+	return list;
+}
+
+void list_display(t_list_chain* list)
+{
+	if (NULL != list)
+	{
+		for (; NULL != list->next; list = list->next)
+		{
+			 hashmap_get(list->value,"rate");
+		}
+		hashmap_get(list->value,"rate");
+	}
+}
+
+t_hashmap_entry* hashmap_entry_create(char* key,void* value){
+    t_hashmap_entry* entry = (t_hashmap_entry*)malloc(sizeof(t_hashmap_entry));
+    entry->key=key;
+    entry->value=value;
+    entry->next=NULL;
+    return entry;
+}
+
+void hashmap_put(t_hashmap* map, char* key, void* value){
+    if(map->size >= map->slots*map->load_factor){
+        map->slots = (map->slots*map->growth_factor);
+        map = (t_hashmap_entry**)malloc(sizeof(t_hashmap_entry*)*map->slots);
+
+    }
+    if(map->entries[hashmap_hash(key,map->slots)]==key){
+        map->entries[hashmap_hash(key,map->slots)]->value=value;
+    }
+    else{
+        t_hashmap_entry* newhash = hashmap_entry_create(key,value);
+        if(map->entries[hashmap_hash(key,map->slots)]==NULL){
+            map->entries[hashmap_hash(key,map->slots)] = newhash;
+        }
+        else{
+            map->entries[hashmap_hash(key,map->slots)]->next = newhash;
+        }
+    }
+}
+
+t_hashmap* JSON_parse(char* string){
+    t_hashmap* map=hashmap_create(100,0.7,2.1);
+    int total = 0;
+    int k,j,i;
+    int c=0;
+    char * key = NULL;
+    char * value = NULL;
+    while(string[total]!='\0' && string[total]!='}'){
+        i = total;
+        c=total;
+        j = 0;
+        while(string[i]!='\0' && string[i]!=':' && string[i]!='}' && string[i]!=',' ){
+            if((string[i]>='a' && string[i]<='z' )||(string[i]>='A' && string[i]<='Z') || (string[i]>='0' && string[i]<='9')){
+                //printf("%c",string[i]);
+                //string2[j]= string[i];
+                j++;
+            }
+            i++;
+            total++;
+        }
+        char* string2 =malloc(j*sizeof(char));
+        k = i;
+        i = c ;
+        j =0;
+        while(i<k){
+            if((string[i]>='a' && string[i]<='z' )||(string[i]>='A' && string[i]<='Z') || (string[i]>='0' && string[i]<='9')){
+                string2[j]= string[i];
+                j++;
+
+            }
+            i++;
+        }
+        string2[j]='\0';
+        total ++;
+        if(key== NULL){
+            key = string2;
+        }else{
+            value = string2;
+        }
+        if(value!=NULL){
+            hashmap_put(map,key,value);
+            value = NULL;
+            key = NULL;
+        }
+    }
+    return map;
+}
+
+char* JSON_stringify(t_hashmap* map){
+    t_hashmap_keys* mykey = hashmap_keys(map);
+    int size=3;
+    char* json = malloc(size*sizeof(char));
+    int flag = 0;
+    unsigned int i;
+    int j = 0;
+    int o;
+    json[j++] = '{';
+    json[j++] = ' ';
+
+    for(i=0;i<mykey->length;i++){
+        char* tmp = mykey->keys[i];
+        char* key = map->entries[hashmap_hash(tmp,map->slots)]->key;
+        char* value = map->entries[hashmap_hash(tmp,map->slots)]->value;
+        if(flag){
+            size += 5+3+string_length(key)+string_length(value);
+            json = realloc(json,size*sizeof(char));
+            json[j++] = ' ';
+            json[j++] = ',';
+            json[j++] = ' ';
+        }else{
+            size += 5+3+string_length(key)+3+string_length(value);
+            json = realloc(json,size*sizeof(char));
+        }
+        o = 0;
+        while(key[o]!='\0'){
+            json[j++]=key[o] ;
+            o++;
+        }
+        json[j++] = ' ';
+        json[j++] = ':';
+        json[j++] = ' ';
+        o = 0;
+        while(value[o]!='\0'){
+            json[j++]=value[o] ;
+            o++;
+        }
+        flag = 1;
+        key = NULL;
+        tmp = NULL;
+       	value = NULL;
+    }
+    json[j++] = ' ';
+    json[j++] = '}';
+    json[j++] = '\0';
+    return json;
+}
+
+unsigned int string_length(char* string){
+    unsigned int i=0;
+    while(string[i]!='\0'){
+        i++;
+    }
+    return i;
+}
+
+
+t_list_chain* list_chain_append(t_list_chain* list,t_hashmap* value)
+{
+	t_list_chain* new_node = list_chain_create(value);
+
+	if (NULL == list)
+	{
+		return new_node;
+	}
+
+	t_list_chain* tmp;
+	for (tmp = list; NULL != tmp->next; tmp = tmp->next);
+	tmp->next = new_node;
+
+	return list;
+}
+
+void hashmap_get(t_hashmap* map,char* key){
+    printf("%s : %s ",map->entries[hashmap_hash(key,map->slots)]->key,map->entries[hashmap_hash(key,map->slots)]->value);
+}
+
+char* hashmap_get_tostring(t_hashmap* map,char* key){
+    char* result = malloc((1+string_length(map->entries[hashmap_hash(key,map->slots)]->key) + string_length(map->entries[hashmap_hash(key,map->slots)]->value) + 3)*sizeof(char));
+    char* string = map->entries[hashmap_hash(key,map->slots)]->key;
+    int i = 0;
+    int j = 0;
+    while(string[j]!='\0'){
+        result[i] =  string[j];
+        i++;
+        j++;
+    }
+    result[i++]=' ';
+    result[i++]=':';
+    result[i++]=' ';
+    string = map->entries[hashmap_hash(key,map->slots)]->value;
+    j=0;
+    while(string[j]!='\0'){
+        result[i] =  string[j];
+        i++;
+        j++;
+    }
+    result[i++]='\0';
+    free(string);
+    return result;
+}
+
+unsigned int hashmap_hash(char*key,int slots){
+    unsigned int code=0;
+    unsigned int i=0;
+    for(;i<strlen(key);i++){
+        code += (unsigned int)key[i];
+    }
+    return (unsigned int)code%slots;
+}
+
+t_hashmap_keys* hashmap_keys(t_hashmap* map){
+    int i;
+    int keyCount = 0;
+    t_hashmap_entry* entry_set;
+    t_hashmap_keys* hk=(t_hashmap_keys*)malloc(sizeof(t_hashmap_keys));
+    hk->keys = (char**)malloc(sizeof(char*)*map->size);
+    for(i=0;i<map->slots;i++){
+        entry_set=map->entries[i];
+        while(entry_set){
+            char * tmp = entry_set->key;
+            hk->keys[keyCount] = malloc((string_length(tmp)+1)*sizeof(char));
+            int o = 0;
+            while(tmp[o]!='\0'){
+                hk->keys[keyCount][o] = tmp[o];
+                o++;
+            }
+            hk->keys[keyCount][o] = '\0';
+            hk->keys[keyCount]=entry_set->key;
+            keyCount++;
+            hk->length=keyCount;
+            entry_set=entry_set->next;
+        }
+    }
+    return hk;
+}

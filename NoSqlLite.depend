@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1434294774 source:e:\coursalgo\bdd_nosql\nosqllite\map.c
+	"map.h"
+
+1434294781 e:\coursalgo\bdd_nosql\nosqllite\map.h
+	<stdio.h>
+	<stdlib.h>
+
+1434294468 source:e:\coursalgo\bdd_nosql\nosqllite\main.c
+	<stdio.h>
+	<stdlib.h>
+	"map.h"
+
