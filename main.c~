@@ -64,9 +64,11 @@ int main(int argc, char** argv){
 		}
 		string[j] = '\0';
 		t_hashmap* map2 = JSON_parse(string);
+		char* e = JSON_stringify(map2);
+		printf("%s",e);
 	}
-	char* e = JSON_stringify(map2);
+	
 
-    printf("%s",e);
+
     return 0;
 }
